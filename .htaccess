@@ -1,0 +1,68 @@
+#--------------------------------------------------
+# Répertoire :
+#--------------------------------------------------
+
+# Le serveur doit suivre les liens symboliques :
+Options +FollowSymlinks
+
+# Activation du module de réécriture d'URL :
+RewriteEngine on
+
+#Pour le type de char
+AddDefaultCharset UTF-8
+
+#Empêcher l'affichage de l'index
+Options All -Indexes
+
+# Protection du fichier htaccess et htpasswd
+<Files ~ "^.*\.([Hh][Tt][AaPp])"> 
+order allow,deny
+deny from all
+satisfy all
+</Files>
+
+# Protection contre les injections de fichiers
+RewriteCond %{REQUEST_METHOD} GET
+RewriteCond %{QUERY_STRING} [a-zA-Z0-9_]=http:// [OR]
+RewriteCond %{QUERY_STRING} [a-zA-Z0-9_]=(\.\.//?)+ [OR]
+RewriteCond %{QUERY_STRING} [a-zA-Z0-9_]=/([a-z0-9_.]//?)+ [NC]
+RewriteRule .* - [F]
+
+# Protections diverses (XSS, clickjacking et MIME-Type sniffing)
+<ifModule mod_headers.c>
+Header set X-XSS-Protection "1; mode=block"
+Header always append X-Frame-Options SAMEORIGIN
+Header set X-Content-Type-Options: "nosniff"
+</ifModule>
+
+#--------------------------------------------------
+# Règles de redirection :
+#--------------------------------------------------
+
+#Rediriges toujours vers une page https
+#RewriteCond %{HTTPS} !on [NC]
+#RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+#Rediriges vers le www tout le temps
+#RewriteCond %{HTTP_HOST} ^polfrx\.com$
+#RewriteRule (.*) https://www.polfrx.com/$1 [R=301]
+
+#Rediriges vers le .com tout le temps
+RewriteCond %{HTTPS_HOST} ^polfrx$
+RewriteRule (.*) https://www.polfrx.com/$1 [R=301]
+
+#Redirige le lien plaquette vers l'adresse réécrite
+RewriteCond %{ENV:REDIRECT_BREAK} !=1
+RewriteCond %{REQUEST_URI} ^(.*)./assets/documents/Resume.pdf$
+RewriteRule ^assets/documents/Resume.pdf$   /resume? [R=301,L]
+
+#--------------------------------------------------
+# Règles de réécriture d'URL :
+#--------------------------------------------------
+
+#Redirige index.php vers l'adresse sans rien
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.html\ HTTP/
+RewriteRule ^(.*)index\.php$ /$1 [R=301,L]
+
+# Plaquette :
+RewriteRule ^resume$   assets/documents/Resume.pdf [E=BREAK:1,L]
